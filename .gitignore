@@ -1,0 +1,6 @@
+.DS_Store
+.env
+.gocache/
+.gomodcache/
+*.log
+archery-auto-approve
