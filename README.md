@@ -1,5 +1,9 @@
 # archery-auto-approve
 
+[![CI](https://github.com/Ryu-Z/archery-auto-approve/actions/workflows/ci.yml/badge.svg)](https://github.com/Ryu-Z/archery-auto-approve/actions/workflows/ci.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Release](https://img.shields.io/github/v/release/Ryu-Z/archery-auto-approve)](https://github.com/Ryu-Z/archery-auto-approve/releases)
+
 `archery-auto-approve` 是一个基于 Go 1.21+ 的守护进程，用于在北京时间非人工审批时段自动审批 Archery 待处理工单。
 
 规则如下：
