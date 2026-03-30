@@ -17,6 +17,8 @@ type WorkflowSummary struct {
 	Status       string `json:"status"`
 	WorkflowType int    `json:"workflow_type"`
 	WorkflowName string `json:"workflow_name"`
+	DBName       string `json:"db_name"`
+	CreateTime   string `json:"create_time"`
 }
 
 func (w Workflow) DisplayName() string {
@@ -51,6 +53,27 @@ func (w Workflow) EffectiveID() int {
 		return w.WorkflowID
 	}
 	return w.ID
+}
+
+func (w Workflow) PrimaryID() int {
+	if w.ID != 0 {
+		return w.ID
+	}
+	return w.WorkflowID
+}
+
+func (w Workflow) EffectiveDBName() string {
+	if w.Workflow != nil && strings.TrimSpace(w.Workflow.DBName) != "" {
+		return w.Workflow.DBName
+	}
+	return ""
+}
+
+func (w Workflow) EffectiveCreateTime() string {
+	if w.Workflow != nil && strings.TrimSpace(w.Workflow.CreateTime) != "" {
+		return w.Workflow.CreateTime
+	}
+	return ""
 }
 
 func (w Workflow) IsApprovedLike() bool {

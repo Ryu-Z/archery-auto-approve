@@ -6,18 +6,18 @@
 
 `archery-auto-approve` 是一个基于 Go 1.21+ 的守护进程，用于在北京时间非人工审批时段自动审批 Archery 待处理工单。
 
-规则如下：
+默认规则如下，且现在已经支持通过 `config.yaml` 配置：
 
-- 周一到周五 `10:00-19:00` 为人工审批时间，不执行自动审批。
-- 周一到周五 `00:00-10:00` 和 `19:00-24:00` 自动审批。
-- 周六、周日全天自动审批。
-- 自动审批备注固定可配置，默认值为 `系统自动审批（非工作时间）`。
+- `schedule.workdays` 中指定的工作日里，`business_hours` 表示人工审批时间段，不执行自动审批
+- 工作日中落在人工审批时间段之外的时间自动审批
+- 非工作日是否自动审批由 `schedule.weekends_auto_approve` 控制
+- 自动审批备注固定可配置，默认值为 `系统自动审批（非工作时间）`
 
 ## 功能特性
 
 - Viper 读取 `config.yaml`
 - 支持 `.env` 注入认证信息
-- 固定使用 `Asia/Shanghai` 时区判断自动审批窗口
+- 支持在配置文件中定义自动审批时间规则与时区
 - 支持 Token 直连认证，或使用用户名/密码调用 `/api/auth/token/` 获取 JWT，并在过期后用 `/api/auth/token/refresh/` 刷新
 - 定时轮询待审批工单
 - 按 Archery OpenAPI v1.3.0 调用 `GET /api/v1/workflow/` 和 `POST /api/v1/workflow/audit/`
@@ -80,6 +80,19 @@ archery:
   token_refresh_path: "/api/auth/token/refresh/"
   login_path: "/api/v1/user/login/"
 
+schedule:
+  timezone: "Asia/Shanghai"
+  workdays:
+    - "monday"
+    - "tuesday"
+    - "wednesday"
+    - "thursday"
+    - "friday"
+  business_hours:
+    start: "10:00"
+    end: "19:00"
+  weekends_auto_approve: true
+
 poll_interval: 300
 log_level: "info"
 max_concurrent: 5
@@ -112,6 +125,10 @@ ARCHERY_AUTO_APPROVE_ARCHERY_TOKEN_REFRESH_PATH=/api/auth/token/refresh/
 
 - 程序启动时会自动读取项目根目录 `.env`。
 - 基础运行参数从 [config.yaml](/Users/ryuliu/codex/archery-auto-approve/config.yaml) 读取，敏感认证信息建议放在 [.env](/Users/ryuliu/codex/archery-auto-approve/.env)。
+- 自动审批时间规则从 `schedule` 读取：
+  - `workdays` 表示需要套用人工审批时间段的星期
+  - `business_hours` 表示人工审批时间段
+  - `weekends_auto_approve` 控制非 `workdays` 日期是否自动审批
 - 如果已持有 Token，可直接通过 `.env` 或 `config.yaml` 填写 `archery.token`。
 - 如果不填 Token，则会使用 `.env` 中的 `username/password` 调用你提供的 `/api/auth/token/`，从返回体中提取 `access` 作为审批请求的 Bearer Token。
 - 如果 `access token` 失效且已拿到 `refresh`，程序会先调用 `/api/auth/token/refresh/` 续期。

@@ -16,16 +16,17 @@ const (
 )
 
 type Config struct {
-	Archery         ArcheryConfig `mapstructure:"archery"`
-	PollInterval    int           `mapstructure:"poll_interval"`
-	LogLevel        string        `mapstructure:"log_level"`
-	MaxConcurrent   int           `mapstructure:"max_concurrent"`
-	ApprovalRemark  string        `mapstructure:"approval_remark"`
-	Approver        string        `mapstructure:"approver"`
-	PendingStatuses []string      `mapstructure:"pending_statuses"`
-	RetryCount      int           `mapstructure:"retry_count"`
-	RetryBackoffSec int           `mapstructure:"retry_backoff_sec"`
-	Health          HealthConfig  `mapstructure:"health"`
+	Archery         ArcheryConfig  `mapstructure:"archery"`
+	Schedule        ScheduleConfig `mapstructure:"schedule"`
+	PollInterval    int            `mapstructure:"poll_interval"`
+	LogLevel        string         `mapstructure:"log_level"`
+	MaxConcurrent   int            `mapstructure:"max_concurrent"`
+	ApprovalRemark  string         `mapstructure:"approval_remark"`
+	Approver        string         `mapstructure:"approver"`
+	PendingStatuses []string       `mapstructure:"pending_statuses"`
+	RetryCount      int            `mapstructure:"retry_count"`
+	RetryBackoffSec int            `mapstructure:"retry_backoff_sec"`
+	Health          HealthConfig   `mapstructure:"health"`
 }
 
 type ArcheryConfig struct {
@@ -47,6 +48,18 @@ type ArcheryConfig struct {
 type HealthConfig struct {
 	Enabled bool `mapstructure:"enabled"`
 	Port    int  `mapstructure:"port"`
+}
+
+type ScheduleConfig struct {
+	Timezone            string              `mapstructure:"timezone"`
+	Workdays            []string            `mapstructure:"workdays"`
+	BusinessHours       BusinessHoursConfig `mapstructure:"business_hours"`
+	WeekendsAutoApprove bool                `mapstructure:"weekends_auto_approve"`
+}
+
+type BusinessHoursConfig struct {
+	Start string `mapstructure:"start"`
+	End   string `mapstructure:"end"`
 }
 
 func Load() (*Config, error) {
@@ -86,6 +99,11 @@ func setDefaults(v *viper.Viper) {
 	v.SetDefault("pending_statuses", []string{"workflow_manreviewing"})
 	v.SetDefault("retry_count", 3)
 	v.SetDefault("retry_backoff_sec", 2)
+	v.SetDefault("schedule.timezone", "Asia/Shanghai")
+	v.SetDefault("schedule.workdays", []string{"monday", "tuesday", "wednesday", "thursday", "friday"})
+	v.SetDefault("schedule.business_hours.start", "10:00")
+	v.SetDefault("schedule.business_hours.end", "19:00")
+	v.SetDefault("schedule.weekends_auto_approve", true)
 	v.SetDefault("archery.base_url", "")
 	v.SetDefault("archery.username", "")
 	v.SetDefault("archery.password", "")
@@ -118,6 +136,26 @@ func (c *Config) Validate() error {
 	if c.PollInterval <= 0 {
 		return fmt.Errorf("poll_interval must be > 0")
 	}
+	if strings.TrimSpace(c.Schedule.Timezone) == "" {
+		return fmt.Errorf("schedule.timezone must not be empty")
+	}
+	if len(c.Schedule.Workdays) == 0 {
+		return fmt.Errorf("schedule.workdays must not be empty")
+	}
+	if !isValidClock(c.Schedule.BusinessHours.Start) {
+		return fmt.Errorf("schedule.business_hours.start must be in HH:MM format")
+	}
+	if !isValidClock(c.Schedule.BusinessHours.End) {
+		return fmt.Errorf("schedule.business_hours.end must be in HH:MM format")
+	}
+	if c.Schedule.BusinessHours.Start == c.Schedule.BusinessHours.End {
+		return fmt.Errorf("schedule.business_hours.start and end must not be equal")
+	}
+	for _, day := range c.Schedule.Workdays {
+		if !isValidWeekday(day) {
+			return fmt.Errorf("schedule.workdays contains invalid weekday: %s", day)
+		}
+	}
 	if c.MaxConcurrent <= 0 {
 		return fmt.Errorf("max_concurrent must be > 0")
 	}
@@ -149,4 +187,18 @@ func loadDotEnv(path string) error {
 		return err
 	}
 	return godotenv.Overload(path)
+}
+
+func isValidClock(value string) bool {
+	_, err := time.Parse("15:04", strings.TrimSpace(value))
+	return err == nil
+}
+
+func isValidWeekday(value string) bool {
+	switch strings.ToLower(strings.TrimSpace(value)) {
+	case "monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday":
+		return true
+	default:
+		return false
+	}
 }

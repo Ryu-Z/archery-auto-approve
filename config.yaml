@@ -11,13 +11,26 @@ archery:
   token_refresh_path: "/api/auth/token/refresh/"
   login_path: "/api/v1/user/login/"
 
-poll_interval: 300
+schedule:
+  timezone: "Asia/Shanghai"
+  workdays:
+  - "monday"
+  - "tuesday"
+  - "wednesday"
+  - "thursday"
+  - "friday"
+  business_hours:
+    start: "10:00"
+    end: "19:00"
+  weekends_auto_approve: true
+
+poll_interval: 120
 log_level: "info"
 max_concurrent: 5
 approval_remark: "系统自动审批（非工作时间）"
 approver: ""
 pending_statuses:
-  - "workflow_manreviewing"
+- "workflow_manreviewing"
 retry_count: 3
 retry_backoff_sec: 2
 

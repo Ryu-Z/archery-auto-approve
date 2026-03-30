@@ -49,10 +49,15 @@ func (s *Scheduler) Run(ctx context.Context) error {
 
 func (s *Scheduler) runOnce(ctx context.Context) error {
 	now := utils.BeijingTime()
-	autoApprove := utils.IsAutoApproveTime(now)
+	autoApprove := utils.IsAutoApproveTime(now, s.cfg.Schedule)
 	s.logger.Info("polling workflows",
 		utils.FieldTime("now", now),
 		utils.FieldBool("auto_approve", autoApprove),
+		utils.FieldString("timezone", s.cfg.Schedule.Timezone),
+		utils.FieldStrings("workdays", s.cfg.Schedule.Workdays),
+		utils.FieldString("business_hours_start", s.cfg.Schedule.BusinessHours.Start),
+		utils.FieldString("business_hours_end", s.cfg.Schedule.BusinessHours.End),
+		utils.FieldBool("weekends_auto_approve", s.cfg.Schedule.WeekendsAutoApprove),
 	)
 
 	if !autoApprove {
@@ -81,8 +86,12 @@ func (s *Scheduler) runOnce(ctx context.Context) error {
 		workflow := workflow
 		if workflow.IsApprovedLike() {
 			s.logger.Info("skip already approved workflow",
+				utils.FieldInt("id", workflow.PrimaryID()),
 				utils.FieldInt("workflow_id", workflow.EffectiveID()),
 				utils.FieldInt("workflow_type", workflow.EffectiveWorkflowType()),
+				utils.FieldString("name", workflow.DisplayName()),
+				utils.FieldString("db_name", workflow.EffectiveDBName()),
+				utils.FieldString("create_time", workflow.EffectiveCreateTime()),
 				utils.FieldString("status", workflow.EffectiveStatus()),
 			)
 			continue
@@ -102,17 +111,25 @@ func (s *Scheduler) runOnce(ctx context.Context) error {
 
 			if err := s.client.ApproveWorkflow(ctx, wf, s.cfg.ApprovalRemark, approver); err != nil {
 				s.logger.Error("auto approve failed",
+					utils.FieldInt("id", wf.PrimaryID()),
 					utils.FieldInt("workflow_id", wf.EffectiveID()),
 					utils.FieldInt("workflow_type", wf.EffectiveWorkflowType()),
+					utils.FieldString("name", wf.DisplayName()),
+					utils.FieldString("db_name", wf.EffectiveDBName()),
+					utils.FieldString("create_time", wf.EffectiveCreateTime()),
 					utils.FieldError(err),
 				)
 				return
 			}
 
 			s.logger.Info("workflow approved",
+				utils.FieldInt("id", wf.PrimaryID()),
 				utils.FieldInt("workflow_id", wf.EffectiveID()),
 				utils.FieldInt("workflow_type", wf.EffectiveWorkflowType()),
 				utils.FieldString("name", wf.DisplayName()),
+				utils.FieldString("db_name", wf.EffectiveDBName()),
+				utils.FieldString("create_time", wf.EffectiveCreateTime()),
+				utils.FieldString("status", wf.EffectiveStatus()),
 				utils.FieldString("remark", s.cfg.ApprovalRemark),
 			)
 		}(workflow)

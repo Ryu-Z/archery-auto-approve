@@ -43,6 +43,10 @@ func FieldString(key, value string) zap.Field {
 	return zap.String(key, value)
 }
 
+func FieldStrings(key string, value []string) zap.Field {
+	return zap.Strings(key, value)
+}
+
 func FieldInt(key string, value int) zap.Field {
 	return zap.Int(key, value)
 }
