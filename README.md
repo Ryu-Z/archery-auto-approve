@@ -216,6 +216,8 @@ docker compose down
 - 读取当前目录的 [.env](/Users/ryuliu/codex/archery-auto-approve/.env)
 - 挂载当前目录的 [config.yaml](/Users/ryuliu/codex/archery-auto-approve/config.yaml) 到容器内 `/app/config.yaml`
 - 暴露健康检查端口 `8080`
+- 使用 Docker `json-file` 日志驱动
+- 单个日志文件最大 `10m`，保留 `3` 个滚动文件
 - 通过 `/healthz` 自动执行容器健康检查
 
 如果你修改了 [.env](/Users/ryuliu/codex/archery-auto-approve/.env) 或 [config.yaml](/Users/ryuliu/codex/archery-auto-approve/config.yaml)，需要重新执行：
